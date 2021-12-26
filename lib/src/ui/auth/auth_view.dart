@@ -7,6 +7,7 @@ import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:photo_taking/pods.dart';
 import 'package:photo_taking/src/controller/auth_controller.dart';
 import 'package:photo_taking/src/resources/constants.dart';
+import 'package:photo_taking/src/resources/helper.dart';
 import 'package:photo_taking/src/resources/routes.dart';
 
 class AuthView extends ConsumerStatefulWidget {
@@ -54,22 +55,23 @@ class _AuthViewState extends ConsumerState<AuthView> {
       if (nextState.status == AuthStatus.error) {
         //Closing Loader
         Navigator.pop(context);
-        _showDialog(context, nextState.errorMsg!);
+        showSimpleDialog(context, nextState.errorMsg!);
       } else if (nextState.status == AuthStatus.loading) {
-        showLodaerDialog(context);
-      } else {
+        showLodaerDialog(context, 'Sending OTP Code...');
+      } else  {
         //Closing Loader
         Navigator.pop(context);
-        Navigator.pushNamed(context, photoScreenRoute);
+        Navigator.pushNamed(context, otpScreenRoute);
       }
     });
   }
 
   @override
   Widget build(
-    BuildContext context,
+    BuildContext context
   ) {
     _attachEventListener();
+
     final textTheme = Theme.of(context).textTheme;
     return Scaffold(
       body: Center(
@@ -99,40 +101,5 @@ class _AuthViewState extends ConsumerState<AuthView> {
         ),
       ),
     );
-  }
-
-  void _showDialog(BuildContext ctx, String title, {List<Widget>? actions}) {
-    showDialog(
-        context: ctx,
-        builder: (_) {
-          return AlertDialog(
-            content: Text(title),
-            actions: actions ??
-                [
-                  TextButton(
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                      },
-                      child: Text('Close'))
-                ],
-          );
-        });
-  }
-
-  void showLodaerDialog(BuildContext ctx) {
-    showDialog(
-        context: ctx,
-        builder: (_) {
-          return AlertDialog(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: const [
-                CircularProgressIndicator(),
-                const SizedBox(height: 10),
-                Text(AppStrings.loading)
-              ],
-            ),
-          );
-        });
   }
 }
