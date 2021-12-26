@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "960080568701",
+    "project_id": "photo-task-app",
+    "storage_bucket": "photo-task-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:960080568701:android:11b67cc33067692db5ac14",
+        "android_client_info": {
+          "package_name": "com.photo_taking"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "960080568701-puhl6h7qbqubmutf4gtgsk2him264mfo.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.photo_taking",
+            "certificate_hash": "392af52a4467fb25ce4b44f0ae80d47f74503122"
+          }
+        },
+        {
+          "client_id": "960080568701-8rsvbsntf41k91143qiat4pcgdsv27e8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB92m4WGmYTi0fbvntAUbufDVnsJ9hz-vk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "960080568701-8rsvbsntf41k91143qiat4pcgdsv27e8.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
