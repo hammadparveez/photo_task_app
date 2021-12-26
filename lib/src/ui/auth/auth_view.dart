@@ -5,7 +5,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:photo_taking/pods.dart';
+import 'package:photo_taking/src/controller/auth_controller.dart';
 import 'package:photo_taking/src/resources/constants.dart';
+import 'package:photo_taking/src/resources/routes.dart';
 
 class AuthView extends ConsumerStatefulWidget {
   const AuthView({Key? key}) : super(key: key);
@@ -47,10 +49,27 @@ class _AuthViewState extends ConsumerState<AuthView> {
     }
   }
 
+  _attachEventListener() {
+    ref.listen<AuthController>(authController, (previousState, nextState) {
+      if (nextState.status == AuthStatus.error) {
+        //Closing Loader
+        Navigator.pop(context);
+        _showDialog(context, nextState.errorMsg!);
+      } else if (nextState.status == AuthStatus.loading) {
+        showLodaerDialog(context);
+      } else {
+        //Closing Loader
+        Navigator.pop(context);
+        Navigator.pushNamed(context, photoScreenRoute);
+      }
+    });
+  }
+
   @override
   Widget build(
     BuildContext context,
   ) {
+    _attachEventListener();
     final textTheme = Theme.of(context).textTheme;
     return Scaffold(
       body: Center(
