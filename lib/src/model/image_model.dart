@@ -3,25 +3,34 @@ import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ImageUploadModel {
-  
   final String imageName;
   final String imageUri;
-  final FieldValue uploadedAt;
+  final String? imageRefrence;
+  Timestamp? uploadedAt;
+  FieldValue? serverTime;
   ImageUploadModel({
     required this.imageName,
     required this.imageUri,
-    required this.uploadedAt,
+    this.imageRefrence,
+    this.uploadedAt,
+    this.serverTime,
   });
+ 
+ 
 
   ImageUploadModel copyWith({
     String? imageName,
     String? imageUri,
-    FieldValue? uploadedAt,
+    String? imageRefrence,
+    Timestamp? uploadedAt,
+    FieldValue? serverTime,
   }) {
     return ImageUploadModel(
       imageName: imageName ?? this.imageName,
       imageUri: imageUri ?? this.imageUri,
+      imageRefrence: imageRefrence ?? this.imageRefrence,
       uploadedAt: uploadedAt ?? this.uploadedAt,
+      serverTime: serverTime ?? this.serverTime,
     );
   }
 
@@ -29,7 +38,8 @@ class ImageUploadModel {
     return {
       'imageName': imageName,
       'imageUri': imageUri,
-      'uploadedAt': uploadedAt,
+      'imageRefrence': imageRefrence,
+      'serverTime': serverTime,
     };
   }
 
@@ -37,7 +47,8 @@ class ImageUploadModel {
     return ImageUploadModel(
       imageName: map['imageName'] ?? '',
       imageUri: map['imageUri'] ?? '',
-      uploadedAt: map['uploadedAt'],
+      imageRefrence: map['imageRefrence'],
+      uploadedAt: map['serverTime'] ,
     );
   }
 
@@ -46,7 +57,9 @@ class ImageUploadModel {
   factory ImageUploadModel.fromJson(String source) => ImageUploadModel.fromMap(json.decode(source));
 
   @override
-  String toString() => 'ImageUploadModel(imageName: $imageName, imageUri: $imageUri, uploadedAt: $uploadedAt)';
+  String toString() {
+    return 'ImageUploadModel(imageName: $imageName, imageUri: $imageUri, imageRefrence: $imageRefrence, uploadedAt: $uploadedAt, serverTime: $serverTime)';
+  }
 
   @override
   bool operator ==(Object other) {
@@ -55,9 +68,17 @@ class ImageUploadModel {
     return other is ImageUploadModel &&
       other.imageName == imageName &&
       other.imageUri == imageUri &&
-      other.uploadedAt == uploadedAt;
+      other.imageRefrence == imageRefrence &&
+      other.uploadedAt == uploadedAt &&
+      other.serverTime == serverTime;
   }
 
   @override
-  int get hashCode => imageName.hashCode ^ imageUri.hashCode ^ uploadedAt.hashCode;
+  int get hashCode {
+    return imageName.hashCode ^
+      imageUri.hashCode ^
+      imageRefrence.hashCode ^
+      uploadedAt.hashCode ^
+      serverTime.hashCode;
+  }
 }

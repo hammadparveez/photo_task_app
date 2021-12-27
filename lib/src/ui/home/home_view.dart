@@ -4,13 +4,22 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
+import 'package:photo_taking/pods.dart';
+import 'package:photo_taking/src/controller/file_controller.dart';
 import 'package:photo_taking/src/model/image_model.dart';
+import 'package:photo_taking/src/resources/helper.dart';
 
-class HomeView extends StatelessWidget {
+class HomeView extends ConsumerStatefulWidget {
   const HomeView({Key? key}) : super(key: key);
 
+  @override
+  ConsumerState<HomeView> createState() => _HomeViewState();
+}
+
+class _HomeViewState extends ConsumerState<HomeView> {
   _onPhotoTap(BuildContext context) {
     showDialog(
         context: context,
@@ -28,7 +37,7 @@ class HomeView extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 TextButton.icon(
-                    onPressed: _onGallerySelect,
+                    onPressed: () => _onGallerySelect(context),
                     icon: const Icon(Icons.photo_library_outlined),
                     label: const Text('Upload from Gallery')),
                 TextButton.icon(
@@ -43,43 +52,50 @@ class HomeView extends StatelessWidget {
 
   _onDeleteTap(BuildContext context) {}
 
-  _onGallerySelect() async {
-    final imagePicker = ImagePicker();
-    final image = await imagePicker.pickImage(source: ImageSource.gallery);
+  _onGallerySelect(BuildContext context) async {
+    Navigator.pop(context);
+    final image = await _onImagePicker(ImageSource.gallery);
     if (image != null) {
-      String? fileUri;
-      final uniqueID = DateTime.now().millisecondsSinceEpoch.toString();
-      final fileRenamed = uniqueID + path.extension(image.path);
-
-      final storageRefence = FirebaseStorage.instance.ref(
-          "${FirebaseAuth.instance.currentUser!.uid}/images/${fileRenamed}");
-
-      UploadTask task = storageRefence.putFile(File(image.path));
-
-      task.snapshotEvents.listen((TaskSnapshot event) async {
-        if (event.bytesTransferred == event.totalBytes) {
-          fileUri = await storageRefence.getDownloadURL();
-        }
-      });
-      FirebaseFirestore.instance
-          .collection('user')
-          .doc(FirebaseAuth.instance.currentUser!.uid)
-          .collection('files')
-          .add(ImageUploadModel(
-                  imageName: fileRenamed,
-                  imageUri: fileUri!,
-                  uploadedAt: FieldValue.serverTimestamp())
-              .toMap());
+      ref.read(fileController).uploadImage(image);
     }
   }
 
-  _onCameraSelect() {
+  _onCameraSelect() async {
+    Navigator.pop(context);
+    final image = await _onImagePicker(ImageSource.camera);
+    if (image != null) {
+      ref.read(fileController).uploadImage(image);
+    }
+  }
+
+  Future<XFile?> _onImagePicker(ImageSource source) async {
     final imagePicker = ImagePicker();
-    imagePicker.pickImage(source: ImageSource.camera);
+    final image = await imagePicker.pickImage(source: source);
+    return image;
+  }
+
+  _attachEventListener() {
+    ref.listen<FileController>(fileController, (previousState, nextState) {
+      switch (nextState.fileUploadStatus) {
+        case FileUploadStatus.uploading:
+          showLodaerDialog(context, 'Uploading an Image...');
+          break;
+        case FileUploadStatus.success:
+          closeLoader(context);
+          showSimpleDialog(context, 'File Uploaded Successfully');
+          break;
+        case FileUploadStatus.error:
+          closeLoader(context);
+          showSimpleDialog(context, 'There was an error while Uploading!');
+          break;
+        default:
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    _attachEventListener();
     return Scaffold(
       appBar: AppBar(),
       drawer: Drawer(
@@ -113,12 +129,25 @@ class HomeView extends StatelessWidget {
           ),
         ],
       ),
-      body: GridView.builder(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2, crossAxisSpacing: 10, mainAxisSpacing: 10),
-          itemCount: 10,
-          itemBuilder: (_, index) {
-            return Text("Hi");
+      body: StreamBuilder<List<ImageUploadModel>>(
+          stream: ref.watch(fileController).imageSnapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              final images = snapshot.data!;
+              return GridView.builder(
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 30,
+                      mainAxisSpacing: 30),
+                  itemCount: images.length,
+                  itemBuilder: (_, index) {
+                    return Image.network(images[index].imageUri,
+                        fit: BoxFit.cover);
+                  });
+            } else if (snapshot.connectionState != ConnectionState.done) {
+              return CircularProgressIndicator();
+            }
+            return Text("Something wrong ${snapshot.error}");
           }),
     );
   }

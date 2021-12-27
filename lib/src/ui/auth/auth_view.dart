@@ -9,6 +9,7 @@ import 'package:photo_taking/src/controller/auth_controller.dart';
 import 'package:photo_taking/src/resources/constants.dart';
 import 'package:photo_taking/src/resources/helper.dart';
 import 'package:photo_taking/src/resources/routes.dart';
+import 'package:photo_taking/src/ui/home/home_view.dart';
 
 class AuthView extends ConsumerStatefulWidget {
   const AuthView({Key? key}) : super(key: key);
@@ -52,29 +53,34 @@ class _AuthViewState extends ConsumerState<AuthView> {
 
   _attachEventListener() {
     ref.listen<AuthController>(authController, (previousState, nextState) {
-      if (nextState.status == AuthStatus.authenticated) {
-        Navigator.pushReplacementNamed(context, photoScreenRoute);
-        return;
-      }
-      if (nextState.status == AuthStatus.error) {
-        //Closing Loader
-        Navigator.pop(context);
-        showSimpleDialog(context, nextState.errorMsg!);
-      } else if (nextState.status == AuthStatus.loading) {
-        showLodaerDialog(context, 'Sending OTP Code...');
-      } else {
-        //Closing Loader
-        Navigator.pop(context);
-        Navigator.pushNamed(context, otpScreenRoute);
+      switch (nextState.status) {
+        case AuthStatus.loading:
+          showLodaerDialog(context, 'Sending OTP Code...');
+          break;
+        case AuthStatus.error:
+          //Close Loader
+          Navigator.pop(context);
+          showSimpleDialog(context, nextState.errorMsg!);
+          break;
+        case AuthStatus.success:
+          //Close Loader
+          Navigator.pop(context);
+          Navigator.pushNamed(context, otpScreenRoute);
+          break;
+        case AuthStatus.authenticated:
+          Navigator.pushReplacementNamed(context, photoScreenRoute);
+          break;
+        default:
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    _attachEventListener();
+    //_attachEventListener();
 
     final textTheme = Theme.of(context).textTheme;
+    return HomeView();
     return Scaffold(
       body: Center(
         child: Column(

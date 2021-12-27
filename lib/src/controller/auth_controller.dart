@@ -15,8 +15,6 @@ abstract class AuthBaseController extends ChangeNotifier {
   String? _errorMsg;
   String? get errorMsg => _errorMsg;
 
-
-
   AuthStatus? _status;
   AuthStatus? get status => _status;
   set _setAuthStatus(AuthStatus? value) {
@@ -46,7 +44,7 @@ class AuthController extends AuthBaseController {
       forceResendingToken: 4,
       phoneNumber: number,
       verificationFailed: _onErrorOccured,
-      codeAutoRetrievalTimeout: (verificationId) {},
+      codeAutoRetrievalTimeout: _onTimedOut,
       verificationCompleted: (credendtial) {},
       codeSent: _whenCodeSent,
     );
@@ -60,6 +58,13 @@ class AuthController extends AuthBaseController {
   void _onErrorOccured(FirebaseAuthException error) {
     _errorMsg = error.message;
     _setAuthStatus = AuthStatus.error;
+  }
+
+  _onTimedOut(String verificationID) {
+    
+        _setAuthStatus = AuthStatus.error;
+        _errorMsg = "Request Timed out";
+      
   }
 }
 
