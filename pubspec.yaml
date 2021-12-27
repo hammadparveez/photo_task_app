@@ -43,6 +43,7 @@ dependencies:
   pin_code_fields: ^7.3.0
   flutter_riverpod: ^1.0.3
   mask_text_input_formatter: ^2.0.0
+  path_provider: ^2.0.8
 
 dev_dependencies:
   flutter_test:

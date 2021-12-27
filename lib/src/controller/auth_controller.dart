@@ -3,7 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:photo_taking/src/model/user_model.dart';
 import 'package:photo_taking/src/repository/auth_repository.dart';
 
-enum AuthStatus { loading, success, error }
+enum AuthStatus { loading, success, error, unauthenticated, authenticated }
 
 abstract class AuthBaseController extends ChangeNotifier {
   final _firebaseAuth = FirebaseAuth.instance;
@@ -15,6 +15,8 @@ abstract class AuthBaseController extends ChangeNotifier {
   String? _errorMsg;
   String? get errorMsg => _errorMsg;
 
+
+
   AuthStatus? _status;
   AuthStatus? get status => _status;
   set _setAuthStatus(AuthStatus? value) {
@@ -24,10 +26,24 @@ abstract class AuthBaseController extends ChangeNotifier {
 }
 
 class AuthController extends AuthBaseController {
+  AuthController() {
+    _firebaseAuth.authStateChanges().listen((user) {
+      if (user != null) {
+        _setAuthStatus = AuthStatus.authenticated;
+      } else {
+        _setAuthStatus = AuthStatus.unauthenticated;
+      }
+      notifyListeners();
+    });
+  }
+
+  Future<void> isAuthenticated() async {}
+
   void verifyPhoneNumber(String number) {
     _setAuthStatus = AuthStatus.loading;
     _firebaseAuth.verifyPhoneNumber(
-      forceResendingToken: 1,
+      timeout: const Duration(seconds: 10),
+      forceResendingToken: 4,
       phoneNumber: number,
       verificationFailed: _onErrorOccured,
       codeAutoRetrievalTimeout: (verificationId) {},

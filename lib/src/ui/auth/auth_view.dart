@@ -52,13 +52,17 @@ class _AuthViewState extends ConsumerState<AuthView> {
 
   _attachEventListener() {
     ref.listen<AuthController>(authController, (previousState, nextState) {
+      if (nextState.status == AuthStatus.authenticated) {
+        Navigator.pushReplacementNamed(context, photoScreenRoute);
+        return;
+      }
       if (nextState.status == AuthStatus.error) {
         //Closing Loader
         Navigator.pop(context);
         showSimpleDialog(context, nextState.errorMsg!);
       } else if (nextState.status == AuthStatus.loading) {
         showLodaerDialog(context, 'Sending OTP Code...');
-      } else  {
+      } else {
         //Closing Loader
         Navigator.pop(context);
         Navigator.pushNamed(context, otpScreenRoute);
@@ -67,9 +71,7 @@ class _AuthViewState extends ConsumerState<AuthView> {
   }
 
   @override
-  Widget build(
-    BuildContext context
-  ) {
+  Widget build(BuildContext context) {
     _attachEventListener();
 
     final textTheme = Theme.of(context).textTheme;

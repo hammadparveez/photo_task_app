@@ -16,20 +16,31 @@ class OtpView extends ConsumerStatefulWidget {
 }
 
 class _OtpViewState extends ConsumerState<OtpView> {
+  late TextEditingController _pinCodeController;
+  @override
+  initState() {
+    super.initState();
+    _pinCodeController = TextEditingController();
+  }
+
   _attachEventListener() {
     ref.listen<OTPreceiver>(otpReceiverController, (previousState, nextState) {
       if (nextState.status == AuthStatus.error) {
         //Closing Loader
         Navigator.pop(context);
-        showSimpleDialog(context, nextState.errorMsg!);
+        showSimpleDialog(context, nextState.errorMsg!, actions: [
+          TextButton(
+              onPressed: () {
+                _pinCodeController.clear();
+                Navigator.pop(context);
+              },
+              child: Text("Close"))
+        ]);
       } else if (nextState.status == AuthStatus.loading) {
         showLodaerDialog(context, 'Verifying OTP Code');
-      } else if (nextState.status == AuthStatus.success) {
+      } else {
         Navigator.pop(context);
         Navigator.pushNamed(context, photoScreenRoute);
-      } else {
-        //Closing Loader
-        Navigator.pop(context);
       }
     });
   }
@@ -47,6 +58,7 @@ class _OtpViewState extends ConsumerState<OtpView> {
             FractionallySizedBox(
               widthFactor: .8,
               child: PinCodeTextField(
+                  controller: _pinCodeController,
                   keyboardType: TextInputType.number,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   appContext: context,
