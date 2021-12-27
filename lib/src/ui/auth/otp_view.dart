@@ -24,10 +24,12 @@ class _OtpViewState extends ConsumerState<OtpView> {
         showSimpleDialog(context, nextState.errorMsg!);
       } else if (nextState.status == AuthStatus.loading) {
         showLodaerDialog(context, 'Verifying OTP Code');
+      } else if (nextState.status == AuthStatus.success) {
+        Navigator.pop(context);
+        Navigator.pushNamed(context, photoScreenRoute);
       } else {
         //Closing Loader
         Navigator.pop(context);
-        Navigator.pushNamed(context, photoScreenRoute);
       }
     });
   }

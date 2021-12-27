@@ -53,10 +53,12 @@ class HomeView extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           FloatingActionButton(
+              heroTag: 'delete-tag',
               onPressed: () => _onDeleteTap(context),
               child: const Icon(Icons.delete)),
           const SizedBox(height: 10),
           FloatingActionButton(
+            heroTag: 'photo-tag',
             onPressed: () => _onPhotoTap(context),
             child: const Icon(Icons.add_a_photo),
           ),
