@@ -8,7 +8,7 @@ import 'package:path/path.dart' as path;
 import 'package:photo_taking/src/controller/auth_controller.dart';
 import 'package:photo_taking/src/model/image_model.dart';
 
-enum FileUploadStatus { none, uploading, success, error }
+enum FileUploadStatus { none, uploading, success, error, deleting,deleted }
 
 class FileController extends ChangeNotifier {
   final FileUploadRepository _fileUploadRepo = FileUploadRepository();
@@ -43,7 +43,16 @@ class FileController extends ChangeNotifier {
     });
   }
 
-  deleteFile() {}
+  deleteFile(ImageUploadModel image) async {
+    _setFileUploadStatus = FileUploadStatus.deleting;
+    final isDeleted = await _fileUploadRepo.deleteFile(image);
+    if(isDeleted){
+       _setFileUploadStatus = FileUploadStatus.deleted;
+       }
+    else {
+_setFileUploadStatus = FileUploadStatus.error;
+    }
+  }
 }
 
 class FileUploadRepository {
@@ -95,7 +104,25 @@ class FileUploadRepository {
         .add(fileMappedModel);
   }
 
-  deleteFile() {
-    
+  Future<bool> deleteFile(ImageUploadModel image) async {
+    await _firebaseStorage.ref(image.imageRefrence!).delete();
+    final querySnapshot = await _firestore
+        .collection('user')
+        .doc('yHPWHO3fb4SNx7TgdK4c')
+        .collection('files')
+        .get();
+    try {
+      final doc = querySnapshot.docs.firstWhere((doc) {
+        final model = ImageUploadModel.fromMap(doc.data());
+        if (model.imageRefrence == image.imageRefrence) {
+          return true;
+        }
+        return false;
+      });
+      doc.reference.delete();
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 }
