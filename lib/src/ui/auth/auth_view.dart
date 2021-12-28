@@ -22,7 +22,7 @@ class _AuthViewState extends ConsumerState<AuthView> {
   late TextEditingController _controller;
   final _formKey = GlobalKey<FormState>();
   final _russianNumberFormat = MaskTextInputFormatter(
-      mask: '+92 (###) ###-##-##', filter: {"#": RegExp(r'[0-9]')});
+      mask: '+7 (###) ###-##-##', filter: {"#": RegExp(r'[0-9]')});
 
   @override
   void initState() {
