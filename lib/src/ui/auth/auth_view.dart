@@ -37,18 +37,18 @@ class _AuthViewState extends ConsumerState<AuthView> {
   }
 
   void _onTap() {
-    final isValid = _formKey.currentState?.validate() ?? false;
-    if (isValid) {
+    //final isValid = _formKey.currentState?.validate() ?? false;
+    //if (isValid) {
       ref.read(authController).verifyPhoneNumber(_controller.text);
-    }
+   // }
   }
 
   String? _phoneFieldValidator(String? value) {
-    var totalCharInField = 19;
-    if (value!.length != totalCharInField) {
-      print("$value");
-      return 'Please Enter a valid number';
-    }
+    // var totalCharInField = 19;
+    // if (value!.length != totalCharInField) {
+    //   print("$value");
+    //   return 'Please Enter a valid number';
+    // }
   }
 
   _attachEventListener() {
