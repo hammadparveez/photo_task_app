@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:photo_taking/src/resources/constants.dart';
 
 void showLodaerDialog(BuildContext ctx, [String? text]) {
@@ -36,4 +37,15 @@ void showSimpleDialog(BuildContext ctx, String title, {List<Widget>? actions}) {
       });
 }
 
-void closeLoader(BuildContext context) => Navigator.pop(context);
+void exitAppDialog(BuildContext context) {
+  showSimpleDialog(context, 'Do you want to exit', actions: [
+        TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('Cancel')),
+        TextButton(
+            onPressed: () => SystemNavigator.pop(), child: Text('Exit')),
+      ]);
+}
+
+void closeLoader(BuildContext context) =>  Navigator.pop(context);
+bool canPop(BuildContext context) => Navigator.canPop(context);

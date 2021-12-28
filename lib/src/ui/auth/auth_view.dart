@@ -58,29 +58,33 @@ class _AuthViewState extends ConsumerState<AuthView> {
           showLodaerDialog(context, 'Sending OTP Code...');
           break;
         case AuthStatus.error:
-          //Close Loader
-          Navigator.pop(context);
+          closeLoader(context);
           showSimpleDialog(context, nextState.errorMsg!);
           break;
-        case AuthStatus.success:
-          //Close Loader
-          Navigator.pop(context);
-          Navigator.pushNamed(context, otpScreenRoute);
+        case AuthStatus.unAuthenticated:
+          if (Navigator.canPop(context)) closeLoader(context);
+
           break;
-        case AuthStatus.authenticated:
-          Navigator.pushReplacementNamed(context, photoScreenRoute);
-          break;
-        default:
+        case AuthStatus.codeSent:
+          closeLoader(context);
+          Navigator.pushReplacementNamed(context, otpScreenRoute);
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    //_attachEventListener();
+    _attachEventListener();
 
     final textTheme = Theme.of(context).textTheme;
-    return HomeView();
+    final authStatus = ref.watch(authController).status;
+
+    if (authStatus == AuthStatus.authenticating) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    } else if (authStatus == AuthStatus.success) {
+      return const HomeView();
+    }
+
     return Scaffold(
       body: Center(
         child: Column(

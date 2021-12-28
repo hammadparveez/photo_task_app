@@ -1,18 +1,16 @@
-import 'dart:io';
-
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:path/path.dart' as path;
 
 import 'package:photo_taking/pods.dart';
+import 'package:photo_taking/src/controller/auth_controller.dart';
 import 'package:photo_taking/src/controller/file_controller.dart';
 import 'package:photo_taking/src/model/image_model.dart';
 import 'package:photo_taking/src/resources/helper.dart';
-import 'package:photo_taking/src/ui/home/custom_drawer.dart';
+import 'package:photo_taking/src/ui/home/components/custom_drawer.dart';
+import 'package:photo_taking/src/ui/home/components/custom_floating_action_btns.dart';
+import 'package:photo_taking/src/ui/home/components/empty_item_widget.dart';
+import 'package:photo_taking/src/ui/home/components/gallery_image.dart';
 
 class HomeView extends ConsumerStatefulWidget {
   const HomeView({Key? key}) : super(key: key);
@@ -23,7 +21,8 @@ class HomeView extends ConsumerStatefulWidget {
 
 class _HomeViewState extends ConsumerState<HomeView> {
   bool hasLongTapped = false;
-  ImageUploadModel? selectedItem;
+
+  List<ImageUploadModel> items = [];
   _onPhotoTap() {
     showDialog(
         context: context,
@@ -33,9 +32,15 @@ class _HomeViewState extends ConsumerState<HomeView> {
   }
 
   _onDeleteTap() {
-    if (selectedItem != null) {
-      ref.read(fileController).deleteFile(selectedItem!);
-    }
+    showSimpleDialog(context, 'Do you want to delete it?', actions: [
+      TextButton(
+          onPressed: () async {
+            Navigator.pop(context);
+            await ref.read(fileController).deleteFile(items.first);
+          },
+          child: Text('Yes')),
+      TextButton(onPressed: () => Navigator.pop(context), child: Text('No')),
+    ]);
   }
 
   _onGallerySelect() async {
@@ -46,7 +51,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
     }
   }
 
-  _onCameraSelect() async {
+  void _onCameraSelect() async {
     Navigator.pop(context);
     final image = await _onImagePicker(ImageSource.camera);
     if (image != null) {
@@ -61,6 +66,12 @@ class _HomeViewState extends ConsumerState<HomeView> {
   }
 
   _attachEventListener() {
+    ref.listen<AuthController>(authController, (previous, nextState) {
+      if (nextState.status == AuthStatus.authenticating) {
+        showLodaerDialog(context, 'Signing out');
+      }
+    });
+
     ref.listen<FileController>(fileController, (previousState, nextState) {
       switch (nextState.fileUploadStatus) {
         case FileUploadStatus.uploading:
@@ -68,7 +79,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
           break;
         case FileUploadStatus.success:
           closeLoader(context);
-          showSimpleDialog(context, 'File Uploaded Successfully');
+          //  showSimpleDialog(context, 'File Uploaded Successfully');
           break;
         case FileUploadStatus.error:
           closeLoader(context);
@@ -80,7 +91,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
           break;
         case FileUploadStatus.deleted:
           closeLoader(context);
-          showSimpleDialog(context, 'Image successfully deleted!');
+          //showSimpleDialog(context, 'Image successfully deleted!');
           break;
         default:
       }
@@ -89,34 +100,34 @@ class _HomeViewState extends ConsumerState<HomeView> {
   }
 
   _unSelectImage() {
-    if (hasLongTapped) {
-      setState(() {
-        hasLongTapped = false;
-        selectedItem = null;
-      });
+    setState(() {
+      items.clear();
+    });
+  }
+
+  _unSelectItem(ImageUploadModel image) {
+    if (items.length > 0 && !items.contains(image)) {
+      showSimpleDialog(context, 'Selection of Multiple Items is disabled');
+      //items.add(image);
+    } else {
+      items.remove(image);
     }
+    setState(() {});
   }
 
   Future<bool> _onBackPress() async {
-    if (hasLongTapped) {
+    if (items.isNotEmpty) {
       _unSelectImage();
       return false;
     } else {
-      showSimpleDialog(context, 'Do you want to exit', actions: [
-        TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('Cancel')),
-        TextButton(
-            onPressed: () => Navigator.of(context).pop(), child: Text('Exit')),
-      ]);
+      exitAppDialog(context);
       return false;
     }
   }
 
   _onLongTap(ImageUploadModel image) {
     setState(() {
-      selectedItem = image;
-      hasLongTapped = true;
+      items.add(image);
     });
   }
 
@@ -128,73 +139,45 @@ class _HomeViewState extends ConsumerState<HomeView> {
       child: Scaffold(
         appBar: AppBar(),
         drawer: const CustomDrawer(),
-        floatingActionButton: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (hasLongTapped)
-              FloatingActionButton(
-                  heroTag: 'delete-tag',
-                  onPressed: _onDeleteTap,
-                  child: const Icon(Icons.delete)),
-            const SizedBox(height: 10),
-            FloatingActionButton(
-              heroTag: 'photo-tag',
-              onPressed: _onPhotoTap,
-              child: const Icon(Icons.add_a_photo),
-            ),
-          ],
+        floatingActionButton: CustomFloatingActionButtons(
+          onDeleteTap: _onDeleteTap,
+          onPhotoTap: _onPhotoTap,
+          isItemEmpty: items.isNotEmpty,
         ),
-        body: StreamBuilder<List<ImageUploadModel>>(
-            stream: ref.watch(fileController).imageSnapshots(),
-            builder: (context, snapshot) {
-              if (snapshot.hasData) {
-                final images = snapshot.data!;
-                if (images.isEmpty) {
-                  return _buildEmptyItemWidget(context);
-                }
-                return GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 30,
-                      mainAxisSpacing: 30),
-                  itemCount: images.length,
-                  itemBuilder: (_, index) {
-                    return GalleryGridView(
-                        onLongTap: () => _onLongTap(images[index]),
-                        onTap: _unSelectImage,
-                        isSelected: hasLongTapped,
-                        image: images[index]);
-                  },
-                );
-              } else if (snapshot.hasError) {
-                return Text("Something wrong ${snapshot.error}");
-              } else {
-                return const Center(child: CircularProgressIndicator());
-              }
-            }),
+        body: _buildBody(),
       ),
     );
   }
 
-  Center _buildEmptyItemWidget(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text('Oops! Sorry No Image uploaded',
-              style: Theme.of(context).textTheme.headline6),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: const [
-              Icon(Icons.camera_alt),
-              const SizedBox(width: 10),
-              Text('Tap on Camera to Upload Image')
-            ],
-          )
-        ],
-      ),
-    );
+  StreamBuilder<List<ImageUploadModel>> _buildBody() {
+    return StreamBuilder<List<ImageUploadModel>>(
+        stream: ref.watch(fileController).imageSnapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            final images = snapshot.data!;
+
+            if (images.isEmpty) {
+              return const EmptyItemWidget();
+            }
+            return GridView.builder(
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2, crossAxisSpacing: 30, mainAxisSpacing: 30),
+              itemCount: images.length,
+              itemBuilder: (_, index) {
+                return GalleryGridView(
+                    key: ValueKey('$index'),
+                    onLongTap: () => _onLongTap(images[index]),
+                    onTap: () => _unSelectItem(images[index]),
+                    isSelected: items.contains(images[index]),
+                    image: images[index]);
+              },
+            );
+          } else if (snapshot.hasError) {
+            return Text("Something wrong ${snapshot.error}");
+          } else {
+            return const Center(child: CircularProgressIndicator());
+          }
+        });
   }
 
   AlertDialog _buildCameraTapDialog() {
@@ -211,53 +194,13 @@ class _HomeViewState extends ConsumerState<HomeView> {
         mainAxisSize: MainAxisSize.min,
         children: [
           TextButton.icon(
-              onPressed: () => _onGallerySelect(),
+              onPressed: _onGallerySelect,
               icon: const Icon(Icons.photo_library_outlined),
               label: const Text('Upload from Gallery')),
           TextButton.icon(
               onPressed: _onCameraSelect,
               icon: const Icon(Icons.camera_alt),
               label: const Text('Upload from Camera'))
-        ],
-      ),
-    );
-  }
-}
-
-class GalleryGridView extends StatelessWidget {
-  final VoidCallback onLongTap;
-  final VoidCallback onTap;
-  final bool isSelected;
-  final ImageUploadModel image;
-  const GalleryGridView({
-    Key? key,
-    required this.onLongTap,
-    required this.onTap,
-    required this.isSelected,
-    required this.image,
-  }) : super(key: key);
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onLongPress: onLongTap,
-      onTap: onTap,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: Image.network(image.imageUri,
-                loadingBuilder: (_, widget, imageChunk) {
-              if (imageChunk?.expectedTotalBytes ==
-                  imageChunk?.cumulativeBytesLoaded) {
-                return widget;
-              }
-              return const Center(child: CircularProgressIndicator());
-            }, fit: BoxFit.cover),
-          ),
-          if (isSelected)
-            Positioned.fill(
-                child: ColoredBox(
-              color: Colors.blue.withOpacity(.3),
-            )),
         ],
       ),
     );

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photo_taking/pods.dart';
 import 'package:photo_taking/src/controller/auth_controller.dart';
+import 'package:photo_taking/src/controller/otp_receiver_controller.dart';
 import 'package:photo_taking/src/resources/constants.dart';
 import 'package:photo_taking/src/resources/helper.dart';
 import 'package:photo_taking/src/resources/routes.dart';
@@ -23,11 +24,17 @@ class _OtpViewState extends ConsumerState<OtpView> {
     _pinCodeController = TextEditingController();
   }
 
+  @override
+  dispose() {
+    _pinCodeController.dispose();
+    super.dispose();
+  }
+
   _attachEventListener() {
-    ref.listen<OTPreceiver>(otpReceiverController, (previousState, nextState) {
+    ref.listen<OTPreceiver>(otpReceiverController,
+        (previousState, nextState) async {
       if (nextState.status == AuthStatus.error) {
-        //Closing Loader
-        Navigator.pop(context);
+        closeLoader(context);
         showSimpleDialog(context, nextState.errorMsg!, actions: [
           TextButton(
               onPressed: () {
@@ -38,9 +45,11 @@ class _OtpViewState extends ConsumerState<OtpView> {
         ]);
       } else if (nextState.status == AuthStatus.loading) {
         showLodaerDialog(context, 'Verifying OTP Code');
-      } else {
-        Navigator.pop(context);
-        Navigator.pushNamed(context, photoScreenRoute);
+      } else if (nextState.status == AuthStatus.success) {
+      
+        closeLoader(context);
+   
+        Navigator.pushReplacementNamed(context,"/");
       }
     });
   }
